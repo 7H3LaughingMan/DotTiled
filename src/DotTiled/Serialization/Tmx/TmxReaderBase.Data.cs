@@ -10,19 +10,17 @@ public abstract partial class TmxReaderBase
 {
   internal Data ReadData(bool usesChunks)
   {
-    var encoding = _reader.GetOptionalAttributeEnum<DataEncoding>("encoding", e => e switch
-    {
-      "csv" => DataEncoding.Csv,
-      "base64" => DataEncoding.Base64,
-      _ => throw new XmlException("Invalid encoding")
-    });
-    var compression = _reader.GetOptionalAttributeEnum<DataCompression>("compression", c => c switch
-    {
-      "gzip" => DataCompression.GZip,
-      "zlib" => DataCompression.ZLib,
-      "zstd" => DataCompression.ZStd,
-      _ => throw new XmlException("Invalid compression")
-    });
+    var encoding = _reader.GetOptionalAttributeEnum<DataEncoding>("encoding", Helpers.CreateMapper<DataEncoding>(
+      s => throw new InvalidOperationException($"Unknown encoding '{s}'"),
+      ("csv", DataEncoding.Csv),
+      ("base64", DataEncoding.Base64)
+    ));
+    var compression = _reader.GetOptionalAttributeEnum<DataCompression>("compression", Helpers.CreateMapper<DataCompression>(
+      s => throw new InvalidOperationException($"Unknown compression '{s}'"),
+      ("gzip", DataCompression.GZip),
+      ("zlib", DataCompression.ZLib),
+      ("zstd", DataCompression.ZStd)
+    ));
 
     if (usesChunks)
     {
@@ -61,7 +59,7 @@ public abstract partial class TmxReaderBase
   }
 
   internal static uint[] ReadTileChildrenInWrapper(string wrapper, XmlReader reader) =>
-    reader.ReadList(wrapper, "tile", (r) => r.GetOptionalAttributeParseable<uint>("gid").GetValueOr(0)).ToArray();
+    reader.ReadList(wrapper, "tile", (r) => r.GetOptionalAttributeUInt32("gid").GetValueOr(0)).ToArray();
 
   internal static uint[] ReadRawData(XmlReader reader, Optional<DataEncoding> encoding, Optional<DataCompression> compression)
   {
@@ -87,7 +85,7 @@ public abstract partial class TmxReaderBase
   internal static uint[] ParseCsvData(string data)
   {
     var values = data
-      .Split((char[])['\n', '\r', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+      .Split(['\n', '\r', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
       .Select(uint.Parse)
       .ToArray();
     return values;

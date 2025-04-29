@@ -23,38 +23,35 @@ public abstract partial class TmxReaderBase
       ("staggered", MapOrientation.Staggered),
       ("hexagonal", MapOrientation.Hexagonal)
     ));
-    var renderOrder = _reader.GetOptionalAttributeEnum<RenderOrder>("renderorder", s => s switch
-    {
-      "right-down" => RenderOrder.RightDown,
-      "right-up" => RenderOrder.RightUp,
-      "left-down" => RenderOrder.LeftDown,
-      "left-up" => RenderOrder.LeftUp,
-      _ => throw new InvalidOperationException($"Unknown render order '{s}'")
-    }).GetValueOr(RenderOrder.RightDown);
-    var compressionLevel = _reader.GetOptionalAttributeParseable<int>("compressionlevel").GetValueOr(-1);
-    var width = _reader.GetRequiredAttributeParseable<int>("width");
-    var height = _reader.GetRequiredAttributeParseable<int>("height");
-    var tileWidth = _reader.GetRequiredAttributeParseable<int>("tilewidth");
-    var tileHeight = _reader.GetRequiredAttributeParseable<int>("tileheight");
-    var hexSideLength = _reader.GetOptionalAttributeParseable<int>("hexsidelength");
-    var staggerAxis = _reader.GetOptionalAttributeEnum<StaggerAxis>("staggeraxis", s => s switch
-    {
-      "x" => StaggerAxis.X,
-      "y" => StaggerAxis.Y,
-      _ => throw new InvalidOperationException($"Unknown stagger axis '{s}'")
-    });
-    var staggerIndex = _reader.GetOptionalAttributeEnum<StaggerIndex>("staggerindex", s => s switch
-    {
-      "odd" => StaggerIndex.Odd,
-      "even" => StaggerIndex.Even,
-      _ => throw new InvalidOperationException($"Unknown stagger index '{s}'")
-    });
-    var parallaxOriginX = _reader.GetOptionalAttributeParseable<float>("parallaxoriginx").GetValueOr(0.0f);
-    var parallaxOriginY = _reader.GetOptionalAttributeParseable<float>("parallaxoriginy").GetValueOr(0.0f);
-    var backgroundColor = _reader.GetOptionalAttributeClass<TiledColor>("backgroundcolor").GetValueOr(TiledColor.Parse("#00000000", CultureInfo.InvariantCulture));
-    var nextLayerID = _reader.GetRequiredAttributeParseable<uint>("nextlayerid");
-    var nextObjectID = _reader.GetRequiredAttributeParseable<uint>("nextobjectid");
-    var infinite = _reader.GetOptionalAttributeParseable<uint>("infinite").GetValueOr(0) == 1;
+    var renderOrder = _reader.GetOptionalAttributeEnum<RenderOrder>("renderorder", Helpers.CreateMapper<RenderOrder>(
+      s => throw new InvalidOperationException($"Unknown render order '{s}'"),
+      ("right-down", RenderOrder.RightDown),
+      ("right-up", RenderOrder.RightUp),
+      ("left-down", RenderOrder.LeftDown),
+      ("left-up", RenderOrder.LeftUp)
+    )).GetValueOr(RenderOrder.RightDown);
+    var compressionLevel = _reader.GetOptionalAttributeInt32("compressionlevel").GetValueOr(-1);
+    var width = _reader.GetRequiredAttributeInt32("width");
+    var height = _reader.GetRequiredAttributeInt32("height");
+    var tileWidth = _reader.GetRequiredAttributeInt32("tilewidth");
+    var tileHeight = _reader.GetRequiredAttributeInt32("tileheight");
+    var hexSideLength = _reader.GetOptionalAttributeInt32("hexsidelength");
+    var staggerAxis = _reader.GetOptionalAttributeEnum<StaggerAxis>("staggeraxis", Helpers.CreateMapper<StaggerAxis>(
+      s => throw new InvalidOperationException($"Unknown stagger axis '{s}'"),
+      ("x", StaggerAxis.X),
+      ("y", StaggerAxis.Y)
+    ));
+    var staggerIndex = _reader.GetOptionalAttributeEnum<StaggerIndex>("staggerindex", Helpers.CreateMapper<StaggerIndex>(
+      s => throw new InvalidOperationException($"Unknown stagger index '{s}'"),
+      ("odd", StaggerIndex.Odd),
+      ("even", StaggerIndex.Even)
+    ));
+    var parallaxOriginX = _reader.GetOptionalAttributeSingle("parallaxoriginx").GetValueOr(0.0f);
+    var parallaxOriginY = _reader.GetOptionalAttributeSingle("parallaxoriginy").GetValueOr(0.0f);
+    var backgroundColor = _reader.GetOptionalAttributeParseable<TiledColor>("backgroundcolor").GetValueOr(TiledColor.Parse("#00000000", CultureInfo.InvariantCulture));
+    var nextLayerID = _reader.GetRequiredAttributeUInt32("nextlayerid");
+    var nextObjectID = _reader.GetRequiredAttributeUInt32("nextobjectid");
+    var infinite = _reader.GetOptionalAttributeBoolean("infinite").GetValueOr(false);
 
     // At most one of
     var propertiesCounter = 0;

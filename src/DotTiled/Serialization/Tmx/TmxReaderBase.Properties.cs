@@ -16,43 +16,35 @@ public abstract partial class TmxReaderBase
     return _reader.ReadList("properties", "property", (r) =>
     {
       var name = r.GetRequiredAttribute("name");
-      var type = r.GetOptionalAttributeEnum<PropertyType>("type", (s) => s switch
-      {
-        "string" => PropertyType.String,
-        "int" => PropertyType.Int,
-        "float" => PropertyType.Float,
-        "bool" => PropertyType.Bool,
-        "color" => PropertyType.Color,
-        "file" => PropertyType.File,
-        "object" => PropertyType.Object,
-        "class" => PropertyType.Class,
-        _ => throw new XmlException("Invalid property type")
-      }).GetValueOr(PropertyType.String);
+      var type = r.GetOptionalAttributeEnum<PropertyType>("type", Helpers.CreateMapper<PropertyType>(
+        s => throw new InvalidOperationException($"Unknown property type '{s}'"),
+        ("string", PropertyType.String),
+        ("int", PropertyType.Int),
+        ("float", PropertyType.Float),
+        ("bool", PropertyType.Bool),
+        ("color", PropertyType.Color),
+        ("file", PropertyType.File),
+        ("object", PropertyType.Object),
+        ("class", PropertyType.Class)
+      )).GetValueOr(PropertyType.String);
+
       var propertyType = r.GetOptionalAttribute("propertytype");
       if (propertyType.HasValue)
-      {
         return ReadPropertyWithCustomType();
-      }
 
-      if (type == PropertyType.String)
+      return type switch
       {
-        return ReadStringProperty(name);
-      }
-
-      IProperty property = type switch
-      {
-        PropertyType.String => throw new InvalidOperationException("String properties should be handled elsewhere."),
-        PropertyType.Int => new IntProperty { Name = name, Value = r.GetRequiredAttributeParseable<int>("value") },
-        PropertyType.Float => new FloatProperty { Name = name, Value = r.GetRequiredAttributeParseable<float>("value") },
-        PropertyType.Bool => new BoolProperty { Name = name, Value = r.GetRequiredAttributeParseable<bool>("value") },
+        PropertyType.String => ReadStringProperty(name),
+        PropertyType.Int => new IntProperty { Name = name, Value = r.GetRequiredAttributeInt32("value") },
+        PropertyType.Float => new FloatProperty { Name = name, Value = r.GetRequiredAttributeSingle("value") },
+        PropertyType.Bool => new BoolProperty { Name = name, Value = r.GetRequiredAttributeBoolean("value") },
         PropertyType.Color => new ColorProperty { Name = name, Value = r.GetRequiredAttributeParseable<TiledColor>("value", s => s == "" ? default : TiledColor.Parse(s, CultureInfo.InvariantCulture)) },
         PropertyType.File => new FileProperty { Name = name, Value = r.GetRequiredAttribute("value") },
-        PropertyType.Object => new ObjectProperty { Name = name, Value = r.GetRequiredAttributeParseable<uint>("value") },
-        PropertyType.Class => throw new XmlException("Class property must have a property type"),
-        PropertyType.Enum => throw new XmlException("Enum property must have a property type"),
-        _ => throw new XmlException("Invalid property type")
+        PropertyType.Object => new ObjectProperty { Name = name, Value = r.GetRequiredAttributeUInt32("value") },
+        PropertyType.Class => throw new InvalidOperationException("Class property must have a property type"),
+        PropertyType.Enum => throw new InvalidOperationException("Enum property must have a property type"),
+        _ => throw new InvalidOperationException($"Invalid property type '{Enum.GetName(type)}'")
       };
-      return property;
     });
   }
 
@@ -127,27 +119,25 @@ public abstract partial class TmxReaderBase
   {
     var name = _reader.GetRequiredAttribute("name");
     var propertyType = _reader.GetRequiredAttribute("propertytype");
-    var typeInXml = _reader.GetOptionalAttributeEnum<PropertyType>("type", (s) => s switch
-    {
-      "string" => PropertyType.String,
-      "int" => PropertyType.Int,
-      _ => throw new XmlException("Invalid property type")
-    }).GetValueOr(PropertyType.String);
+    var typeInXml = _reader.GetOptionalAttributeEnum<PropertyType>("type", Helpers.CreateMapper<PropertyType>(
+      s => throw new InvalidOperationException($"Invalid property type '{s}'"),
+      ("string", PropertyType.String),
+      ("int", PropertyType.Int)
+    )).GetValueOr(PropertyType.String);
     var customTypeDef = _customTypeResolver(propertyType);
 
     // If the custom enum definition is not found,
     // we assume an empty enum definition.
     if (!customTypeDef.HasValue)
     {
-#pragma warning disable CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
 #pragma warning disable IDE0072 // Add missing cases
       return typeInXml switch
       {
         PropertyType.String => new StringProperty { Name = name, Value = _reader.GetRequiredAttribute("value") },
-        PropertyType.Int => new IntProperty { Name = name, Value = _reader.GetRequiredAttributeParseable<int>("value") },
+        PropertyType.Int => new IntProperty { Name = name, Value = _reader.GetRequiredAttributeInt32("value") },
+        _ => throw new InvalidOperationException($"Invalid property type '{Enum.GetName(typeInXml)}'")
       };
 #pragma warning restore IDE0072 // Add missing cases
-#pragma warning restore CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
     }
 
     if (customTypeDef.Value is not CustomEnumDefinition ced)
@@ -171,7 +161,7 @@ public abstract partial class TmxReaderBase
     }
     else if (ced.StorageType == CustomEnumStorageType.Int)
     {
-      var value = _reader.GetRequiredAttributeParseable<int>("value");
+      var value = _reader.GetRequiredAttributeInt32("value");
       if (ced.ValueAsFlags)
       {
         var allValues = ced.Values;

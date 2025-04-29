@@ -11,7 +11,7 @@ public abstract partial class TmxReaderBase
     Optional<string> parentVersion = default,
     Optional<string> parentTiledVersion = default)
   {
-    var firstGID = _reader.GetOptionalAttributeParseable<uint>("firstgid");
+    var firstGID = _reader.GetOptionalAttributeUInt32("firstgid");
     var source = _reader.GetOptionalAttribute("source");
 
     // Check if external tileset
@@ -31,38 +31,35 @@ public abstract partial class TmxReaderBase
     var tiledVersion = _reader.GetOptionalAttribute("tiledversion").GetValueOrOptional(parentTiledVersion);
     var name = _reader.GetRequiredAttribute("name");
     var @class = _reader.GetOptionalAttribute("class").GetValueOr("");
-    var tileWidth = _reader.GetRequiredAttributeParseable<int>("tilewidth");
-    var tileHeight = _reader.GetRequiredAttributeParseable<int>("tileheight");
-    var spacing = _reader.GetOptionalAttributeParseable<int>("spacing").GetValueOr(0);
-    var margin = _reader.GetOptionalAttributeParseable<int>("margin").GetValueOr(0);
-    var tileCount = _reader.GetRequiredAttributeParseable<int>("tilecount");
-    var columns = _reader.GetRequiredAttributeParseable<int>("columns");
-    var objectAlignment = _reader.GetOptionalAttributeEnum<ObjectAlignment>("objectalignment", s => s switch
-    {
-      "unspecified" => ObjectAlignment.Unspecified,
-      "topleft" => ObjectAlignment.TopLeft,
-      "top" => ObjectAlignment.Top,
-      "topright" => ObjectAlignment.TopRight,
-      "left" => ObjectAlignment.Left,
-      "center" => ObjectAlignment.Center,
-      "right" => ObjectAlignment.Right,
-      "bottomleft" => ObjectAlignment.BottomLeft,
-      "bottom" => ObjectAlignment.Bottom,
-      "bottomright" => ObjectAlignment.BottomRight,
-      _ => throw new InvalidOperationException($"Unknown object alignment '{s}'")
-    }).GetValueOr(ObjectAlignment.Unspecified);
-    var renderSize = _reader.GetOptionalAttributeEnum<TileRenderSize>("tilerendersize", s => s switch
-    {
-      "tile" => TileRenderSize.Tile,
-      "grid" => TileRenderSize.Grid,
-      _ => throw new InvalidOperationException($"Unknown render size '{s}'")
-    }).GetValueOr(TileRenderSize.Tile);
-    var fillMode = _reader.GetOptionalAttributeEnum<FillMode>("fillmode", s => s switch
-    {
-      "stretch" => FillMode.Stretch,
-      "preserve-aspect-fit" => FillMode.PreserveAspectFit,
-      _ => throw new InvalidOperationException($"Unknown fill mode '{s}'")
-    }).GetValueOr(FillMode.Stretch);
+    var tileWidth = _reader.GetRequiredAttributeInt32("tilewidth");
+    var tileHeight = _reader.GetRequiredAttributeInt32("tileheight");
+    var spacing = _reader.GetOptionalAttributeInt32("spacing").GetValueOr(0);
+    var margin = _reader.GetOptionalAttributeInt32("margin").GetValueOr(0);
+    var tileCount = _reader.GetRequiredAttributeInt32("tilecount");
+    var columns = _reader.GetRequiredAttributeInt32("columns");
+    var objectAlignment = _reader.GetOptionalAttributeEnum<ObjectAlignment>("objectalignment", Helpers.CreateMapper<ObjectAlignment>(
+      s => throw new InvalidOperationException($"Unknown object alignment '{s}'"),
+      ("unspecified", ObjectAlignment.Unspecified),
+      ("topleft", ObjectAlignment.TopLeft),
+      ("top", ObjectAlignment.Top),
+      ("topright", ObjectAlignment.TopRight),
+      ("left", ObjectAlignment.Left),
+      ("center", ObjectAlignment.Center),
+      ("right", ObjectAlignment.Right),
+      ("bottomleft", ObjectAlignment.BottomLeft),
+      ("bottom", ObjectAlignment.Bottom),
+      ("bottomright", ObjectAlignment.BottomRight)
+    )).GetValueOr(ObjectAlignment.Unspecified);
+    var renderSize = _reader.GetOptionalAttributeEnum<TileRenderSize>("tilerendersize", Helpers.CreateMapper<TileRenderSize>(
+      s => throw new InvalidOperationException($"Unknown render size '{s}'"),
+      ("tile", TileRenderSize.Tile),
+      ("grid", TileRenderSize.Grid)
+    )).GetValueOr(TileRenderSize.Tile);
+    var fillMode = _reader.GetOptionalAttributeEnum<FillMode>("fillmode", Helpers.CreateMapper<FillMode>(
+      s => throw new InvalidOperationException($"Unknown fill mode '{s}'"),
+      ("stretch", FillMode.Stretch),
+      ("preserve-aspect-fit", FillMode.PreserveAspectFit)
+    )).GetValueOr(FillMode.Stretch);
 
     // Elements
     Image image = null;
@@ -116,18 +113,17 @@ public abstract partial class TmxReaderBase
   internal Image ReadImage()
   {
     // Attributes
-    var format = _reader.GetOptionalAttributeEnum<ImageFormat>("format", s => s switch
-    {
-      "png" => ImageFormat.Png,
-      "jpg" => ImageFormat.Jpg,
-      "bmp" => ImageFormat.Bmp,
-      "gif" => ImageFormat.Gif,
-      _ => throw new InvalidOperationException($"Unknown image format '{s}'")
-    });
+    var format = _reader.GetOptionalAttributeEnum<ImageFormat>("format", Helpers.CreateMapper<ImageFormat>(
+      s => throw new InvalidOperationException($"Unknown image format '{s}'"),
+      ("png", ImageFormat.Png),
+      ("jpg", ImageFormat.Jpg),
+      ("bmp", ImageFormat.Bmp),
+      ("gif", ImageFormat.Gif)
+    ));
     var source = _reader.GetOptionalAttribute("source");
-    var transparentColor = _reader.GetOptionalAttributeClass<TiledColor>("trans");
-    var width = _reader.GetOptionalAttributeParseable<int>("width");
-    var height = _reader.GetOptionalAttributeParseable<int>("height");
+    var transparentColor = _reader.GetOptionalAttributeParseable<TiledColor>("trans");
+    var width = _reader.GetOptionalAttributeInt32("width");
+    var height = _reader.GetOptionalAttributeInt32("height");
 
     _reader.ProcessChildren("image", (r, elementName) => elementName switch
     {
@@ -151,8 +147,8 @@ public abstract partial class TmxReaderBase
   internal TileOffset ReadTileOffset()
   {
     // Attributes
-    var x = _reader.GetOptionalAttributeParseable<float>("x").GetValueOr(0f);
-    var y = _reader.GetOptionalAttributeParseable<float>("y").GetValueOr(0f);
+    var x = _reader.GetOptionalAttributeSingle("x").GetValueOr(0.0f);
+    var y = _reader.GetOptionalAttributeSingle("y").GetValueOr(0.0f);
 
     _reader.ReadStartElement("tileoffset");
     return new TileOffset { X = x, Y = y };
@@ -161,14 +157,13 @@ public abstract partial class TmxReaderBase
   internal Grid ReadGrid()
   {
     // Attributes
-    var orientation = _reader.GetOptionalAttributeEnum<GridOrientation>("orientation", s => s switch
-    {
-      "orthogonal" => GridOrientation.Orthogonal,
-      "isometric" => GridOrientation.Isometric,
-      _ => throw new InvalidOperationException($"Unknown orientation '{s}'")
-    }).GetValueOr(GridOrientation.Orthogonal);
-    var width = _reader.GetRequiredAttributeParseable<int>("width");
-    var height = _reader.GetRequiredAttributeParseable<int>("height");
+    var orientation = _reader.GetOptionalAttributeEnum<GridOrientation>("orientation", Helpers.CreateMapper<GridOrientation>(
+      s => throw new InvalidOperationException($"Unknown orientation '{s}'"),
+      ("orthogonal", GridOrientation.Orthogonal),
+      ("isometric", GridOrientation.Isometric)
+    )).GetValueOr(GridOrientation.Orthogonal);
+    var width = _reader.GetRequiredAttributeInt32("width");
+    var height = _reader.GetRequiredAttributeInt32("height");
 
     _reader.ReadStartElement("grid");
     return new Grid { Orientation = orientation, Width = width, Height = height };
@@ -177,10 +172,10 @@ public abstract partial class TmxReaderBase
   internal Transformations ReadTransformations()
   {
     // Attributes
-    var hFlip = _reader.GetOptionalAttributeParseable<uint>("hflip").GetValueOr(0) == 1;
-    var vFlip = _reader.GetOptionalAttributeParseable<uint>("vflip").GetValueOr(0) == 1;
-    var rotate = _reader.GetOptionalAttributeParseable<uint>("rotate").GetValueOr(0) == 1;
-    var preferUntransformed = _reader.GetOptionalAttributeParseable<uint>("preferuntransformed").GetValueOr(0) == 1;
+    var hFlip = _reader.GetOptionalAttributeBoolean("hflip").GetValueOr(false);
+    var vFlip = _reader.GetOptionalAttributeBoolean("vflip").GetValueOr(false);
+    var rotate = _reader.GetOptionalAttributeBoolean("rotate").GetValueOr(false);
+    var preferUntransformed = _reader.GetOptionalAttributeBoolean("preferuntransformed").GetValueOr(false);
 
     _reader.ReadStartElement("transformations");
     return new Transformations { HFlip = hFlip, VFlip = vFlip, Rotate = rotate, PreferUntransformed = preferUntransformed };
@@ -189,13 +184,13 @@ public abstract partial class TmxReaderBase
   internal Tile ReadTile()
   {
     // Attributes
-    var id = _reader.GetRequiredAttributeParseable<uint>("id");
+    var id = _reader.GetRequiredAttributeUInt32("id");
     var type = _reader.GetOptionalAttribute("type").GetValueOr("");
-    var probability = _reader.GetOptionalAttributeParseable<float>("probability").GetValueOr(0f);
-    var x = _reader.GetOptionalAttributeParseable<int>("x").GetValueOr(0);
-    var y = _reader.GetOptionalAttributeParseable<int>("y").GetValueOr(0);
-    var width = _reader.GetOptionalAttributeParseable<int>("width");
-    var height = _reader.GetOptionalAttributeParseable<int>("height");
+    var probability = _reader.GetOptionalAttributeSingle("probability").GetValueOr(0.0f);
+    var x = _reader.GetOptionalAttributeInt32("x").GetValueOr(0);
+    var y = _reader.GetOptionalAttributeInt32("y").GetValueOr(0);
+    var width = _reader.GetOptionalAttributeInt32("width");
+    var height = _reader.GetOptionalAttributeInt32("height");
 
     // Elements
     var propertiesCounter = 0;
@@ -211,9 +206,11 @@ public abstract partial class TmxReaderBase
       "objectgroup" => () => Helpers.SetAtMostOnce(ref objectLayer, ReadObjectLayer(), "ObjectLayer"),
       "animation" => () => Helpers.SetAtMostOnce(ref animation, r.ReadList<Frame>("animation", "frame", (ar) =>
       {
-        var tileID = ar.GetRequiredAttributeParseable<uint>("tileid");
-        var duration = ar.GetRequiredAttributeParseable<int>("duration");
-        return new Frame { TileID = tileID, Duration = duration };
+        return new Frame
+        {
+          TileID = ar.GetRequiredAttributeUInt32("tileid"),
+          Duration = ar.GetRequiredAttributeInt32("duration")
+        };
       }), "Animation"),
       _ => r.Skip
     });
@@ -242,7 +239,7 @@ public abstract partial class TmxReaderBase
     // Attributes
     var name = _reader.GetRequiredAttribute("name");
     var @class = _reader.GetOptionalAttribute("class").GetValueOr("");
-    var tile = _reader.GetRequiredAttributeParseable<int>("tile");
+    var tile = _reader.GetRequiredAttributeInt32("tile");
 
     // Elements
     var propertiesCounter = 0;
@@ -278,8 +275,8 @@ public abstract partial class TmxReaderBase
     var name = _reader.GetRequiredAttribute("name");
     var @class = _reader.GetOptionalAttribute("class").GetValueOr("");
     var color = _reader.GetRequiredAttributeParseable<TiledColor>("color");
-    var tile = _reader.GetRequiredAttributeParseable<int>("tile");
-    var probability = _reader.GetOptionalAttributeParseable<float>("probability").GetValueOr(0f);
+    var tile = _reader.GetRequiredAttributeInt32("tile");
+    var probability = _reader.GetOptionalAttributeSingle("probability").GetValueOr(0f);
 
     // Elements
     var propertiesCounter = 0;
@@ -305,7 +302,7 @@ public abstract partial class TmxReaderBase
   internal WangTile ReadWangTile()
   {
     // Attributes
-    var tileID = _reader.GetRequiredAttributeParseable<uint>("tileid");
+    var tileID = _reader.GetRequiredAttributeUInt32("tileid");
     var wangID = _reader.GetRequiredAttributeParseable<byte[]>("wangid", s =>
     {
       // Comma-separated list of indices (0-254)

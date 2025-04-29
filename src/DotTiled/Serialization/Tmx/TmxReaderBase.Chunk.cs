@@ -4,10 +4,10 @@ public abstract partial class TmxReaderBase
 {
   internal Chunk ReadChunk(Optional<DataEncoding> encoding, Optional<DataCompression> compression)
   {
-    var x = _reader.GetRequiredAttributeParseable<int>("x");
-    var y = _reader.GetRequiredAttributeParseable<int>("y");
-    var width = _reader.GetRequiredAttributeParseable<int>("width");
-    var height = _reader.GetRequiredAttributeParseable<int>("height");
+    var x = _reader.GetRequiredAttributeInt32("x");
+    var y = _reader.GetRequiredAttributeInt32("y");
+    var width = _reader.GetRequiredAttributeInt32("width");
+    var height = _reader.GetRequiredAttributeInt32("height");
 
     var usesTileChildrenInsteadOfRawData = !encoding.HasValue;
     if (usesTileChildrenInsteadOfRawData)

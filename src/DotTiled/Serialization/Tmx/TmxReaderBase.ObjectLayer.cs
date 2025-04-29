@@ -11,27 +11,26 @@ public abstract partial class TmxReaderBase
   internal ObjectLayer ReadObjectLayer()
   {
     // Attributes
-    var id = _reader.GetRequiredAttributeParseable<uint>("id");
+    var id = _reader.GetRequiredAttributeUInt32("id");
     var name = _reader.GetOptionalAttribute("name").GetValueOr("");
     var @class = _reader.GetOptionalAttribute("class").GetValueOr("");
-    var x = _reader.GetOptionalAttributeParseable<int>("x").GetValueOr(0);
-    var y = _reader.GetOptionalAttributeParseable<int>("y").GetValueOr(0);
-    var width = _reader.GetOptionalAttributeParseable<int>("width").GetValueOr(0);
-    var height = _reader.GetOptionalAttributeParseable<int>("height").GetValueOr(0);
-    var opacity = _reader.GetOptionalAttributeParseable<float>("opacity").GetValueOr(1.0f);
-    var visible = _reader.GetOptionalAttributeParseable<uint>("visible").GetValueOr(1) == 1;
-    var tintColor = _reader.GetOptionalAttributeClass<TiledColor>("tintcolor");
-    var offsetX = _reader.GetOptionalAttributeParseable<float>("offsetx").GetValueOr(0.0f);
-    var offsetY = _reader.GetOptionalAttributeParseable<float>("offsety").GetValueOr(0.0f);
-    var parallaxX = _reader.GetOptionalAttributeParseable<float>("parallaxx").GetValueOr(1.0f);
-    var parallaxY = _reader.GetOptionalAttributeParseable<float>("parallaxy").GetValueOr(1.0f);
-    var color = _reader.GetOptionalAttributeClass<TiledColor>("color");
-    var drawOrder = _reader.GetOptionalAttributeEnum<DrawOrder>("draworder", s => s switch
-    {
-      "topdown" => DrawOrder.TopDown,
-      "index" => DrawOrder.Index,
-      _ => throw new InvalidOperationException($"Unknown draw order '{s}'")
-    }).GetValueOr(DrawOrder.TopDown);
+    var x = _reader.GetOptionalAttributeInt32("x").GetValueOr(0);
+    var y = _reader.GetOptionalAttributeInt32("y").GetValueOr(0);
+    var width = _reader.GetOptionalAttributeInt32("width").GetValueOr(0);
+    var height = _reader.GetOptionalAttributeInt32("height").GetValueOr(0);
+    var opacity = _reader.GetOptionalAttributeSingle("opacity").GetValueOr(1.0f);
+    var visible = _reader.GetOptionalAttributeBoolean("visible").GetValueOr(true);
+    var tintColor = _reader.GetOptionalAttributeParseable<TiledColor>("tintcolor");
+    var offsetX = _reader.GetOptionalAttributeSingle("offsetx").GetValueOr(0.0f);
+    var offsetY = _reader.GetOptionalAttributeSingle("offsety").GetValueOr(0.0f);
+    var parallaxX = _reader.GetOptionalAttributeSingle("parallaxx").GetValueOr(1.0f);
+    var parallaxY = _reader.GetOptionalAttributeSingle("parallaxy").GetValueOr(1.0f);
+    var color = _reader.GetOptionalAttributeParseable<TiledColor>("color");
+    var drawOrder = _reader.GetOptionalAttributeEnum<DrawOrder>("draworder", Helpers.CreateMapper<DrawOrder>(
+      s => throw new InvalidOperationException($"Unknown draw order '{s}'"),
+      ("topdown", DrawOrder.TopDown),
+      ("index", DrawOrder.Index)
+    )).GetValueOr(DrawOrder.TopDown);
 
     // Elements
     var propertiesCounter = 0;
@@ -88,16 +87,16 @@ public abstract partial class TmxReaderBase
     bool visibleDefault = obj?.Visible ?? true;
     List<IProperty> propertiesDefault = obj?.Properties ?? null;
 
-    var id = _reader.GetOptionalAttributeParseable<uint>("id").GetValueOr(idDefault);
+    var id = _reader.GetOptionalAttributeUInt32("id").GetValueOr(idDefault);
     var name = _reader.GetOptionalAttribute("name").GetValueOr(nameDefault);
     var type = _reader.GetOptionalAttribute("type").GetValueOr(typeDefault);
-    var x = _reader.GetOptionalAttributeParseable<float>("x").GetValueOr(xDefault);
-    var y = _reader.GetOptionalAttributeParseable<float>("y").GetValueOr(yDefault);
-    var width = _reader.GetOptionalAttributeParseable<float>("width").GetValueOr(widthDefault);
-    var height = _reader.GetOptionalAttributeParseable<float>("height").GetValueOr(heightDefault);
-    var rotation = _reader.GetOptionalAttributeParseable<float>("rotation").GetValueOr(rotationDefault);
-    var gid = _reader.GetOptionalAttributeParseable<uint>("gid").GetValueOrOptional(gidDefault);
-    var visible = _reader.GetOptionalAttributeParseable<uint>("visible").GetValueOr(visibleDefault ? 1u : 0u) == 1;
+    var x = _reader.GetOptionalAttributeSingle("x").GetValueOr(xDefault);
+    var y = _reader.GetOptionalAttributeSingle("y").GetValueOr(yDefault);
+    var width = _reader.GetOptionalAttributeSingle("width").GetValueOr(widthDefault);
+    var height = _reader.GetOptionalAttributeSingle("height").GetValueOr(heightDefault);
+    var rotation = _reader.GetOptionalAttributeSingle("rotation").GetValueOr(rotationDefault);
+    var gid = _reader.GetOptionalAttributeUInt32("gid").GetValueOrOptional(gidDefault);
+    var visible = _reader.GetOptionalAttributeBoolean("visible").GetValueOr(visibleDefault);
 
     // Elements
     DotTiled.Object foundObject = null;
@@ -190,12 +189,10 @@ public abstract partial class TmxReaderBase
     var points = _reader.GetRequiredAttributeParseable<List<Vector2>>("points", s =>
     {
       // Takes on format "x1,y1 x2,y2 x3,y3 ..."
-      var coords = s.Split(' ');
-      return coords.Select(c =>
-      {
-        var xy = c.Split(',');
-        return new Vector2(float.Parse(xy[0], CultureInfo.InvariantCulture), float.Parse(xy[1], CultureInfo.InvariantCulture));
-      }).ToList();
+      return s
+        .Split(' ')
+        .Select(c => c.Split(','))
+        .Select(xy => new Vector2(float.Parse(xy[0], CultureInfo.InvariantCulture), float.Parse(xy[1], CultureInfo.InvariantCulture))).ToList();
     });
 
     _reader.ReadStartElement("polygon");
@@ -214,12 +211,10 @@ public abstract partial class TmxReaderBase
     var points = _reader.GetRequiredAttributeParseable<List<Vector2>>("points", s =>
     {
       // Takes on format "x1,y1 x2,y2 x3,y3 ..."
-      var coords = s.Split(' ');
-      return coords.Select(c =>
-      {
-        var xy = c.Split(',');
-        return new Vector2(float.Parse(xy[0], CultureInfo.InvariantCulture), float.Parse(xy[1], CultureInfo.InvariantCulture));
-      }).ToList();
+      return s
+        .Split(' ')
+        .Select(c => c.Split(','))
+        .Select(xy => new Vector2(float.Parse(xy[0], CultureInfo.InvariantCulture), float.Parse(xy[1], CultureInfo.InvariantCulture))).ToList();
     });
 
     _reader.ReadStartElement("polyline");
@@ -243,29 +238,27 @@ public abstract partial class TmxReaderBase
   {
     // Attributes
     var fontFamily = _reader.GetOptionalAttribute("fontfamily").GetValueOr("sans-serif");
-    var pixelSize = _reader.GetOptionalAttributeParseable<int>("pixelsize").GetValueOr(16);
-    var wrap = _reader.GetOptionalAttributeParseable<int>("wrap").GetValueOr(0) == 1;
-    var color = _reader.GetOptionalAttributeClass<TiledColor>("color").GetValueOr(TiledColor.Parse("#000000", CultureInfo.InvariantCulture));
-    var bold = _reader.GetOptionalAttributeParseable<int>("bold").GetValueOr(0) == 1;
-    var italic = _reader.GetOptionalAttributeParseable<int>("italic").GetValueOr(0) == 1;
-    var underline = _reader.GetOptionalAttributeParseable<int>("underline").GetValueOr(0) == 1;
-    var strikeout = _reader.GetOptionalAttributeParseable<int>("strikeout").GetValueOr(0) == 1;
-    var kerning = _reader.GetOptionalAttributeParseable<int>("kerning").GetValueOr(1) == 1;
-    var hAlign = _reader.GetOptionalAttributeEnum<TextHorizontalAlignment>("halign", s => s switch
-    {
-      "left" => TextHorizontalAlignment.Left,
-      "center" => TextHorizontalAlignment.Center,
-      "right" => TextHorizontalAlignment.Right,
-      "justify" => TextHorizontalAlignment.Justify,
-      _ => throw new InvalidOperationException($"Unknown horizontal alignment '{s}'")
-    }).GetValueOr(TextHorizontalAlignment.Left);
-    var vAlign = _reader.GetOptionalAttributeEnum<TextVerticalAlignment>("valign", s => s switch
-    {
-      "top" => TextVerticalAlignment.Top,
-      "center" => TextVerticalAlignment.Center,
-      "bottom" => TextVerticalAlignment.Bottom,
-      _ => throw new InvalidOperationException($"Unknown vertical alignment '{s}'")
-    }).GetValueOr(TextVerticalAlignment.Top);
+    var pixelSize = _reader.GetOptionalAttributeInt32("pixelsize").GetValueOr(16);
+    var wrap = _reader.GetOptionalAttributeBoolean("wrap").GetValueOr(false);
+    var color = _reader.GetOptionalAttributeParseable<TiledColor>("color").GetValueOr(TiledColor.Parse("#000000", CultureInfo.InvariantCulture));
+    var bold = _reader.GetOptionalAttributeBoolean("bold").GetValueOr(false);
+    var italic = _reader.GetOptionalAttributeBoolean("italic").GetValueOr(false);
+    var underline = _reader.GetOptionalAttributeBoolean("underline").GetValueOr(false);
+    var strikeout = _reader.GetOptionalAttributeBoolean("strikeout").GetValueOr(false);
+    var kerning = _reader.GetOptionalAttributeBoolean("kerning").GetValueOr(true);
+    var hAlign = _reader.GetOptionalAttributeEnum<TextHorizontalAlignment>("halign", Helpers.CreateMapper<TextHorizontalAlignment>(
+      s => throw new InvalidOperationException($"Unknown horizontal alignment '{s}'"),
+      ("left", TextHorizontalAlignment.Left),
+      ("center", TextHorizontalAlignment.Center),
+      ("right", TextHorizontalAlignment.Right),
+      ("justify", TextHorizontalAlignment.Justify)
+    )).GetValueOr(TextHorizontalAlignment.Left);
+    var vAlign = _reader.GetOptionalAttributeEnum<TextVerticalAlignment>("valign", Helpers.CreateMapper<TextVerticalAlignment>(
+      s => throw new InvalidOperationException($"Unknown vertical alignment '{s}'"),
+      ("top", TextVerticalAlignment.Top),
+      ("center", TextVerticalAlignment.Center),
+      ("bottom", TextVerticalAlignment.Bottom)
+    )).GetValueOr(TextVerticalAlignment.Top);
 
     // Elements
     var text = _reader.ReadElementContentAsString("text", "");
